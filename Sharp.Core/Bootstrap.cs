@@ -1,4 +1,4 @@
-/* 
+/*
  * ModSharp
  * Copyright (C) 2023-2025 Kxnrl. All Rights Reserved.
  *
@@ -302,8 +302,10 @@ public static class Bootstrap
             var root = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
                        ?? throw new InvalidOperationException("Root path is null!");
 
+            var configFile = Path.Combine(root, "..", "configs", "core.json");
+
             var configuration = new ConfigurationBuilder()
-                                .AddJsonFile(Path.Combine(root, "appsettings.json"), false, false)
+                                .AddJsonFile(configFile, false, false)
                                 .Build();
 
             var services = new ServiceCollection();
