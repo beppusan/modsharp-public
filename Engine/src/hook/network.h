@@ -37,9 +37,6 @@ inline void SetNetworkMessageBypassHook(bool state)
 bool AddHookedNetMsgId(uint16_t netMsgId);
 void RemoveHookedNetMsgId(uint16_t netMsgId);
 
-void DispatchEffect(const char* pName, CEffectData* pData);
-void DispatchEffectFilter(IRecipientFilter* pFilter, float delay, const char* pName, CEffectData* pData);
-
 // const char* pszParticleName, Vector* pOrigin, QAngle* pAngles, CBaseEntity* pEntity, bool bAllowDormantSpawn = false, int32_t nSplitScreenPlayerSlot = -1, IRecipientFilter* pFilter = nullptr, bool bResetAllParticlesOnEntity = false
 int32_t DispatchParticleEffectFilter(const char* pszParticleName, Vector* pOrigin, Vector* pAngles, IRecipientFilter* pFilter = nullptr);
 int32_t DispatchParticleEffectFilter(const char* pszParticleName, CBaseEntity* pEntity, Vector* pOrigin, Vector* pAngles, bool bResetAllParticlesOnEntity = false, IRecipientFilter* pFilter = nullptr);

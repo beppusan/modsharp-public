@@ -107,18 +107,6 @@ void RemoveHookedNetMsgId(uint16_t netMsgId)
     std::erase(s_HookedNetMsgIds, netMsgId);
 }
 
-void DispatchEffect(const char* pName, CEffectData* pData)
-{
-    s_bBypassDispatchEffect = true;
-    address::server::UTIL_DispatchEffect(pName, pData);
-    s_bBypassDispatchEffect = false;
-}
-void DispatchEffectFilter(IRecipientFilter* pFilter, float delay, const char* pName, CEffectData* pData)
-{
-    s_bBypassDispatchEffect = true;
-    address::server::UTIL_DispatchEffectFilter(pFilter, delay, pName, pData);
-    s_bBypassDispatchEffect = false;
-}
 // const char* pszParticleName, Vector* pOrigin, Vector* pAngles, CBaseEntity* pEntity, bool bAllowDormantSpawn = false, int32_t nSplitScreenPlayerSlot = -1, IRecipientFilter* pFilter = nullptr, bool bResetAllParticlesOnEntity = false
 int32_t DispatchParticleEffectFilter(const char* pszParticleName, Vector* pOrigin, Vector* pAngles, IRecipientFilter* pFilter)
 {

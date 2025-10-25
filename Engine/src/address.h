@@ -153,24 +153,28 @@ using ServiceGiveGlove_t                                  = void (*)(void* servi
 using UTIL_SetModel_t                                     = void (*)(CBaseEntity*, const char*);
 using UTIL_RadioMessage_t                                 = void (*)(IRecipientFilter*, int, int, const char*, const char*, const char*, const char*, const char*);
 using UTIL_DispatchEffect_t                               = void (*)(const char*, CEffectData*);
-using UTIL_DispatchEffectFilter_t                         = void (*)(IRecipientFilter*, float, const char*, CEffectData*);
-using UTIL_DispatchParticleEffectFilterPosition_t         = int32_t (*)(const char*, Vector*, Vector*, CBaseEntity*, bool, int, IRecipientFilter*, bool);
-using UTIL_DispatchParticleEffectFilterAttachment_t       = int32_t (*)(const char*, uint32_t, CBaseEntity*, uint8_t, uint32_t, bool, int, IRecipientFilter*, bool);
-using CCSGameRules_TerminateRound_t                       = void (*)(IGameRules*, float, uint32_t, void*, uint32_t);
-using CCSGameRules_PlayerCanHearChat_t                    = bool (*)(IGameRules*, CCSPlayerController*, CCSPlayerController*, bool);
-using CGameEntitySystem_FindEntityByIndex_t               = CBaseEntity* (*)(CGameEntitySystem*, int32_t index);
-using CGameEntitySystem_AllocPooledString_t               = void* (*)(CUtlSymbolLarge*, const char*);
-using CGameEntitySystem_FindByClassname_t                 = CBaseEntity* (*)(CGameEntitySystem*, CBaseEntity* startEntity, const char* classname);
-using CGameEntitySystem_FindByName_t                      = CBaseEntity* (*)(CGameEntitySystem*, CBaseEntity* startEntity, const char* name, void*, void*, void*, void*);
-using CGameEntitySystem_FindInSphere_t                    = CBaseEntity* (*)(CGameEntitySystem*, CBaseEntity* startEntity, Vector* vector, float radius);
-using CGameEntitySystem_SpawnEntityFromKeyValuesSync_t    = int32_t (*)(const char* classname, void* kv);
-using CGameEntitySystem_AddListenerEntity_t               = void (*)(CGameEntitySystem*, IEntityListener* listener);
-using CGameEntitySystem_RemoveListenerEntity_t            = void (*)(CGameEntitySystem*, IEntityListener* listener);
-using CGameEntitySystem_AddEntityIOEvent_t                = void (*)(CGameEntitySystem*, CBaseEntity*, const char*, CBaseEntity*, CBaseEntity*, Variant_t*, float, int, void*, void*);
-using ScriptRegisterConVar_t                              = void* (*)(void*, const char*, const char*, const char*, int);
-using ScriptRegisterConCommand_t                          = void (*)(void*, const char*, void*, const char*, int);
-using ScriptSetConVarString_t                             = void (*)(BaseConVar* convar, int64_t, const char*);
-using ScriptSetConVarNumber_t                             = void (*)(BaseConVar* convar, int64_t value, int64_t value2);
+#ifdef PLATFORM_WINDOWS
+using UTIL_DispatchEffectFilter_t = void (*)(IRecipientFilter*, float, const char*, CEffectData*);
+#else
+using UTIL_DispatchEffectFilter_t = void (*)(IRecipientFilter*, const char*, CEffectData*);
+#endif
+using UTIL_DispatchParticleEffectFilterPosition_t      = int32_t (*)(const char*, Vector*, Vector*, CBaseEntity*, bool, int, IRecipientFilter*, bool);
+using UTIL_DispatchParticleEffectFilterAttachment_t    = int32_t (*)(const char*, uint32_t, CBaseEntity*, uint8_t, uint32_t, bool, int, IRecipientFilter*, bool);
+using CCSGameRules_TerminateRound_t                    = void (*)(IGameRules*, float, uint32_t, void*, uint32_t);
+using CCSGameRules_PlayerCanHearChat_t                 = bool (*)(IGameRules*, CCSPlayerController*, CCSPlayerController*, bool);
+using CGameEntitySystem_FindEntityByIndex_t            = CBaseEntity* (*)(CGameEntitySystem*, int32_t index);
+using CGameEntitySystem_AllocPooledString_t            = void* (*)(CUtlSymbolLarge*, const char*);
+using CGameEntitySystem_FindByClassname_t              = CBaseEntity* (*)(CGameEntitySystem*, CBaseEntity* startEntity, const char* classname);
+using CGameEntitySystem_FindByName_t                   = CBaseEntity* (*)(CGameEntitySystem*, CBaseEntity* startEntity, const char* name, void*, void*, void*, void*);
+using CGameEntitySystem_FindInSphere_t                 = CBaseEntity* (*)(CGameEntitySystem*, CBaseEntity* startEntity, Vector* vector, float radius);
+using CGameEntitySystem_SpawnEntityFromKeyValuesSync_t = int32_t (*)(const char* classname, void* kv);
+using CGameEntitySystem_AddListenerEntity_t            = void (*)(CGameEntitySystem*, IEntityListener* listener);
+using CGameEntitySystem_RemoveListenerEntity_t         = void (*)(CGameEntitySystem*, IEntityListener* listener);
+using CGameEntitySystem_AddEntityIOEvent_t             = void (*)(CGameEntitySystem*, CBaseEntity*, const char*, CBaseEntity*, CBaseEntity*, Variant_t*, float, int, void*, void*);
+using ScriptRegisterConVar_t                           = void* (*)(void*, const char*, const char*, const char*, int);
+using ScriptRegisterConCommand_t                       = void (*)(void*, const char*, void*, const char*, int);
+using ScriptSetConVarString_t                          = void (*)(BaseConVar* convar, int64_t, const char*);
+using ScriptSetConVarNumber_t                          = void (*)(BaseConVar* convar, int64_t value, int64_t value2);
 #ifdef PLATFORM_WINDOWS
 using ScriptSetConVarDouble_t = void (*)(BaseConVar* convar, float value);
 #else
