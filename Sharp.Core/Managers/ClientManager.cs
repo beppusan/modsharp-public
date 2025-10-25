@@ -18,11 +18,11 @@
  */
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Google.Protobuf;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Sharp.Core.Bridges.Natives;
 using Sharp.Core.Objects;
@@ -47,20 +47,25 @@ internal class ClientManager : ICoreClientManager
         SteamID                                                     SteamId,
         Action<IGameClient, QueryConVarValueStatus, string, string> Callback);
 
+    private readonly ILogger<ClientManager> _logger;
+    private readonly IConfiguration         _configuration;
+
     private readonly List<IClientListener>                                     _listeners;
-    private readonly ILogger<ClientManager>                                    _logger;
     private readonly Queue<GameClient>                                         _adminRunCheckQueue;
     private readonly Dictionary<string, IClientManager.DelegateClientCommand?> _commandHooks;
     private readonly Dictionary<string, IClientManager.DelegateClientCommand?> _commandListeners;
     private readonly Queue<Action>                                             _commandQueue;
     private readonly Dictionary<int, QueryConVarInfo>                          _queryConVarInfos;
     private readonly Dictionary<SteamID, Admin>                                _admins;
+    private readonly HashSet<char>                                             _publicTriggers;
+    private readonly HashSet<char>                                             _silentTriggers;
 
     private static int _sQueryCookie;
 
-    public ClientManager(ILogger<ClientManager> logger)
+    public ClientManager(ILogger<ClientManager> logger, IConfiguration configuration)
     {
         _logger             = logger;
+        _configuration      = configuration;
         _listeners          = [];
         _adminRunCheckQueue = [];
         _commandHooks       = new Dictionary<string, IClientManager.DelegateClientCommand?>(StringComparer.OrdinalIgnoreCase);
@@ -68,6 +73,8 @@ internal class ClientManager : ICoreClientManager
         _commandQueue       = [];
         _queryConVarInfos   = [];
         _admins             = [];
+        _publicTriggers     = [];
+        _silentTriggers     = [];
 
         Forward.OnClientConnected                += OnClientConnected;
         Forward.OnClientActive                   += OnClientPutInServer;
@@ -83,6 +90,9 @@ internal class ClientManager : ICoreClientManager
         Bridges.Forwards.Game.OnGamePreShutdown  += OnGameShutdown;
         Bridges.Forwards.Game.OnGameShutdown     += OnGameShutdown;
         Bridges.Forwards.Game.OnStartupServerPre += OnServerReset;
+
+        configuration.GetReloadToken().RegisterChangeCallback(_ => LoadCommandPrefix(), null);
+        LoadCommandPrefix();
     }
 
     private void OnClientConnected(IntPtr ptr)
@@ -211,7 +221,7 @@ internal class ClientManager : ICoreClientManager
         var isCommand = false;
 
         // is chat trigger
-        if (TryParseChatCommand(message, out var command, out var arguments)
+        if (TryParseChatCommand(message, out var silent, out var command, out var arguments)
             && _commandHooks.TryGetValue(command, out var callbacks)
             && callbacks is not null)
         {
@@ -248,7 +258,7 @@ internal class ClientManager : ICoreClientManager
             }
         }
 
-        return action;
+        return silent ? ECommandAction.Stopped : action;
     }
 
     private ECommandAction OnClientConsoleCommand(nint ptr, string rawCommand, string? arguments)
@@ -612,16 +622,25 @@ internal class ClientManager : ICoreClientManager
         }
     }
 
-    private static bool TryParseChatCommand(string input,
+    private unsafe bool TryParseChatCommand(string input,
+        out                     bool               silent,
         [NotNullWhen(true)] out string?            command,
         out                     string?            arguments)
     {
+        silent    = false;
         command   = null;
         arguments = null;
 
         var memory = input.AsSpan();
 
-        if (memory.Length == 0 || (memory[0] != '!' && memory[0] != '.' && memory[0] != '/'))
+        if (memory.Length is < 2 or >= 256)
+        {
+            return false;
+        }
+
+        silent = _silentTriggers.Contains(memory[0]);
+
+        if (!silent && !_publicTriggers.Contains(memory[0]))
         {
             return false;
         }
@@ -631,7 +650,7 @@ internal class ClientManager : ICoreClientManager
         var spacer = memory.IndexOf(' ');
 
         var commandSpan = spacer == -1 ? memory : memory[..spacer];
-        var buffer      = ArrayPool<char>.Shared.Rent(commandSpan.Length);
+        var buffer      = stackalloc char[commandSpan.Length];
 
         for (var i = 0; i < commandSpan.Length; i++)
         {
@@ -639,7 +658,6 @@ internal class ClientManager : ICoreClientManager
         }
 
         command = new string(buffer, 0, commandSpan.Length);
-        ArrayPool<char>.Shared.Return(buffer);
 
         if (spacer != -1 && memory.Length > spacer + 1)
         {
@@ -647,5 +665,62 @@ internal class ClientManager : ICoreClientManager
         }
 
         return true;
+    }
+
+    private void LoadCommandPrefix()
+    {
+        _publicTriggers.Clear();
+        _silentTriggers.Clear();
+
+        if (_configuration.GetSection("ChatCommand.TriggerPrefixes") is not { } section)
+        {
+            _logger.LogWarning("'ChatCommand.TriggerPrefixes' is missing in configuration, chat command trigger will not work");
+
+            return;
+        }
+
+        if (section.GetSection("Public").Get<List<string>>() is { } publicList)
+        {
+            foreach (var prefix in publicList)
+            {
+                if (string.IsNullOrWhiteSpace(prefix) || prefix.Length != 1 || !char.IsAscii(prefix[0]))
+                {
+                    _logger.LogWarning(
+                        "Chat command trigger prefix <Public> '{prefix}' must be a single ascii character, skipped it",
+                        prefix);
+
+                    continue;
+                }
+
+                _publicTriggers.Add(prefix[0]);
+            }
+        }
+        else
+        {
+            _logger.LogWarning(
+                "'ChatCommand.TriggerPrefixes/Public' is invalid in configuration, chat command public trigger will not work");
+        }
+
+        if (section.GetSection("Silent").Get<List<string>>() is { } silentList)
+        {
+            foreach (var prefix in silentList)
+            {
+                if (string.IsNullOrWhiteSpace(prefix) || prefix.Length != 1 || !char.IsAscii(prefix[0]))
+                {
+                    _logger.LogWarning(
+                        "Chat command trigger prefix <Silent> '{prefix}' must be a single ascii character, skipped it",
+                        prefix);
+
+                    continue;
+                }
+
+                _silentTriggers.Add(prefix[0]);
+            }
+        }
+        else
+        {
+            _logger.LogWarning(
+                "'ChatCommand.TriggerPrefixes/Silent' is invalid in configuration, chat command silent trigger will not work");
+        }
     }
 }

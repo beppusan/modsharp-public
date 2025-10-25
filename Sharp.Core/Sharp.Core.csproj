@@ -78,10 +78,4 @@
         <ProjectReference Include="..\Sharp.Generator.Sdk\Sharp.Generator.Sdk.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
-    <ItemGroup>
-        <None Update="appsettings.json">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-    </ItemGroup>
-
 </Project>
