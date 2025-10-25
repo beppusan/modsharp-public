@@ -129,6 +129,7 @@ jobs:
         env:
           GITCOMMIT: ${{ needs.prefetch.outputs.git_commit }}
         run: |
+          dotnet publish Sharp.Extensions/CommandManager/src/Sharp.Extensions.CommandManager.csproj -f net9.0 -r win-x64 --no-self-contained -c Release --output ./extensions/Sharp.Extensions.CommandManager -p:VersionSuffix=${{env.GITCOMMIT}}
           dotnet publish Sharp.Extensions/GameEventManager/src/Sharp.Extensions.GameEventManager.csproj -f net9.0 -r win-x64 --no-self-contained -c Release --output ./extensions/Sharp.Extensions.GameEventManager -p:VersionSuffix=${{env.GITCOMMIT}}
           dotnet publish Sharp.Extensions/EntityHookManager/src/Sharp.Extensions.EntityHookManager.csproj -f net9.0 -r win-x64 --no-self-contained -c Release --output ./extensions/Sharp.Extensions.EntityHookManager -p:VersionSuffix=${{env.GITCOMMIT}}
 
@@ -241,6 +242,7 @@ jobs:
         env:
           GITCOMMIT: ${{ needs.prefetch.outputs.git_commit }}
         run: |
+          dotnet publish Sharp.Extensions/CommandManager/src/Sharp.Extensions.CommandManager.csproj -f net9.0 -r linux-x64 --no-self-contained -c Release --output ./extensions/Sharp.Extensions.CommandManager -p:VersionSuffix=${{env.GITCOMMIT}}
           dotnet publish Sharp.Extensions/GameEventManager/src/Sharp.Extensions.GameEventManager.csproj -f net9.0 -r linux-x64 --no-self-contained -c Release --output ./extensions/Sharp.Extensions.GameEventManager -p:VersionSuffix=${{env.GITCOMMIT}}
           dotnet publish Sharp.Extensions/EntityHookManager/src/Sharp.Extensions.EntityHookManager.csproj -f net9.0 -r linux-x64 --no-self-contained -c Release --output ./extensions/Sharp.Extensions.EntityHookManager -p:VersionSuffix=${{env.GITCOMMIT}}
 
@@ -302,6 +304,7 @@ jobs:
         run: |
           dotnet pack Sharp.Shared/Sharp.Shared.csproj --configuration Release --output .build/nuget -p:VersionSuffix=${{env.GITCOMMIT}}
           dotnet pack Sharp.Generator.Sdk/Sharp.Generator.Sdk.csproj --configuration Release --output .build/nuget -p:VersionSuffix=${{env.GITCOMMIT}}
+          dotnet pack Sharp.Extensions/CommandManager/src/Sharp.Extensions.CommandManager.csproj --configuration Release --output .build/nuget -p:VersionSuffix=${{env.GITCOMMIT}}
           dotnet pack Sharp.Extensions/GameEventManager/src/Sharp.Extensions.GameEventManager.csproj --configuration Release --output .build/nuget -p:VersionSuffix=${{env.GITCOMMIT}}
           dotnet pack Sharp.Extensions/EntityHookManager/src/Sharp.Extensions.EntityHookManager.csproj --configuration Release --output .build/nuget -p:VersionSuffix=${{env.GITCOMMIT}}
 
