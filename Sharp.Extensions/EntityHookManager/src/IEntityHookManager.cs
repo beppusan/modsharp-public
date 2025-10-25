@@ -44,15 +44,33 @@ public interface IEntityHookManager
         IBaseEntity?                   caller,
         ref EHookAction                result);
 
+    /// <summary>
+    ///     监听实体创建事件
+    /// </summary>
     void ListenEntityCreate(string classname, EventDelegate callback);
 
+    /// <summary>
+    ///     监听实体删除事件
+    /// </summary>
     void ListenEntityDelete(string classname, EventDelegate callback);
 
+    /// <summary>
+    ///     监听实体生成事件
+    /// </summary>
     void ListenEntitySpawn(string classname, EventDelegate callback);
 
+    /// <summary>
+    ///     监听武器生成事件
+    /// </summary>
     void ListenWeaponSpawn(WeaponEventDelegate callback);
 
+    /// <summary>
+    ///     Hook 实体IO中的 Input
+    /// </summary>
     void HookEntityInput(string classname, string input, InputDelegate callback);
 
+    /// <summary>
+    ///     Hook 实体IO中的 Output
+    /// </summary>
     void HookEntityOutput(string classname, string output, OutputDelegate callback);
 }

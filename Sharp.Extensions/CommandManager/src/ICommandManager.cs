@@ -28,9 +28,20 @@ public interface ICommandManager
 
     public delegate void DelegateOnClientCommand(IGameClient client, StringCommand command);
 
+    /// <summary>
+    ///     注册仅限客户端的<b>控制台</b>和<b>聊天框</b>命令 <br />
+    ///     <remarks>控制台会自动加上<c>ms_</c>前缀</remarks>
+    /// </summary>
     void RegisterClientCommand(string command, DelegateOnClientCommand callback);
 
+    /// <summary>
+    ///     注册仅限客户端且需要管理员权限的<b>控制台</b>和<b>聊天框</b>命令 <br />
+    ///     <remarks>控制台会自动加上<c>ms_</c>前缀</remarks>
+    /// </summary>
     void RegisterAdminCommand(string command, DelegateOnClientCommand callback, string permission);
 
+    /// <summary>
+    ///     注册仅限服务端控制台执行的命令
+    /// </summary>
     void RegisterServerCommand(string command, string description, DelegateOnServerCommand callback);
 }

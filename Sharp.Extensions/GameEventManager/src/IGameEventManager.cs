@@ -28,13 +28,32 @@ public interface IGameEventManager
 
     delegate HookReturnValue<bool> DelegateOnHookEvent(IGameEvent e, ref bool serverOnly);
 
+    /// <summary>
+    ///     Hook 游戏事件发射 <br />
+    ///     <remarks>通常用于修改事件内容或阻止传播</remarks>
+    /// </summary>
     void HookEvent(string eventName, DelegateOnHookEvent callback);
 
+    /// <summary>
+    ///     监听游戏事件
+    /// </summary>
     void ListenEvent(string eventName, DelegateOnEventFired callback);
 
+    /// <summary>
+    ///     创建游戏事件 <br />
+    ///     <remarks>通常需要手动销毁事件</remarks>
+    /// </summary>
     IGameEvent? CreateEvent(string eventName, bool force);
 
+    /// <summary>
+    ///     创建游戏事件 <br />
+    ///     <remarks>通常需要手动销毁事件</remarks>
+    /// </summary>
     T? CreateEvent<T>(bool force) where T : class, IGameEvent;
 
+    /// <summary>
+    ///     克隆游戏事件 <br />
+    ///     <remarks>通常需要手动销毁事件</remarks>
+    /// </summary>
     T? CloneEvent<T>(T e) where T : class, IGameEvent;
 }

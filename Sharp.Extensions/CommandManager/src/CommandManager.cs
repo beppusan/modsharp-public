@@ -43,7 +43,6 @@ internal class CommandManager : ICommandManager, ISharpExtension
 
     private readonly Dictionary<string, Dictionary<string, CLCommandCallback?>> _clientCommandHooks;
     private readonly Dictionary<string, SVCommandCallback?>                     _serverCommandHooks;
-    private readonly Dictionary<string, CLCommandCallback?>                     _chatCommandHooks;
 
     public CommandManager(ILogger<CommandManager> logger, ISharedSystem sharedSystem)
     {
@@ -56,7 +55,6 @@ internal class CommandManager : ICommandManager, ISharpExtension
 
         _clientCommandHooks = new Dictionary<string, Dictionary<string, CLCommandCallback?>>(comparer);
         _serverCommandHooks = new Dictionary<string, SVCommandCallback?>(comparer);
-        _chatCommandHooks   = new Dictionary<string, CLCommandCallback?>(comparer);
     }
 
     public void Load()
