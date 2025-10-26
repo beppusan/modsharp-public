@@ -5,8 +5,8 @@
         <ImplicitUsings>disable</ImplicitUsings>
         <LangVersion>13</LangVersion>
         <Nullable>enable</Nullable>
-        <AssemblyName>Sharp.Extensions.EntityHookManager</AssemblyName>
-        <RootNamespace>Sharp.Extensions.EntityHookManager</RootNamespace>
+        <AssemblyName>EntityEnhancements</AssemblyName>
+        <RootNamespace>Sharp.Modules.EntityEnhancements</RootNamespace>
         <VersionPrefix>2.0</VersionPrefix>
         <VersionSuffix>1</VersionSuffix>
         <Version>$(VersionPrefix).$(VersionSuffix)</Version>
@@ -17,13 +17,13 @@
         <SourceControlInformationFeatureSupported>true</SourceControlInformationFeatureSupported>
         <Copyright>©2025 Kxnrl</Copyright>
         <Authors>Kxnrl, BoneTM, laper32, Nukoooo</Authors>
-        <Description>Extension of IEntityHookManager for ModSharp.</Description>
+        <Description>Entity Enhancement features for CS2.</Description>
         <PackageTags>ModSharp;CS2;</PackageTags>
         <RepositoryType>git</RepositoryType>
         <RepositoryUrl>https://github.com/Kxnrl/ModSharp-public</RepositoryUrl>
         <EnableDynamicLoading>true</EnableDynamicLoading>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <BaseOutputPath>../../../.build/Sharp.Extensions/EntityHookManager/</BaseOutputPath>
+        <BaseOutputPath>../../../.build/Sharp.Modules/EntityEnhancements/</BaseOutputPath>
         <PlatformTarget>x64</PlatformTarget>
         <PackageId>ModSharp.$(AssemblyName)</PackageId>
         <Title>ModSharp.$(AssemblyName)</Title>

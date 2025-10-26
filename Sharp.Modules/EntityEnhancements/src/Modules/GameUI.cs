@@ -1,0 +1,358 @@
+/*
+ * ModSharp
+ * Copyright (C) 2023-2025 Kxnrl. All Rights Reserved.
+ *
+ * This file is part of ModSharp.
+ * ModSharp is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * ModSharp is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with ModSharp. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging;
+using Sharp.Shared;
+using Sharp.Shared.Enums;
+using Sharp.Shared.GameEntities;
+using Sharp.Shared.Listeners;
+using Sharp.Shared.Managers;
+using Sharp.Shared.Types;
+
+namespace Sharp.Modules.EntityEnhancements.Modules;
+
+internal sealed class GameUI : IEnhancement, IGameListener, IEntityListener
+{
+    private const string Class = "logic_case";
+
+    private readonly record struct GameUIEntity(IBaseEntity Owner, UserCommandButtons Buttons);
+
+    private const uint SpawnFlagsFreezePlayer   = 32;
+    private const uint SpawnFlagsHideWeapon     = 64;
+    private const uint SpawnFlagsUseDeactivate  = 128;
+    private const uint SpawnFlagsJumpDeactivate = 256;
+
+    private readonly ILogger<GameUI> _logger;
+    private readonly IModSharp       _modSharp;
+    private readonly IEntityManager  _entityManager;
+
+    private readonly Dictionary<IBaseEntity, GameUIEntity> _lastEntity;
+
+    private Guid? _timer;
+
+    public GameUI(ISharedSystem sharedSystem)
+    {
+        _logger        = sharedSystem.GetLoggerFactory().CreateLogger<GameUI>();
+        _modSharp      = sharedSystem.GetModSharp();
+        _entityManager = sharedSystem.GetEntityManager();
+
+        _lastEntity = [];
+    }
+
+    public void Init()
+    {
+        _entityManager.InstallEntityListener(this);
+        _modSharp.InstallGameListener(this);
+
+        _timer = _modSharp.PushTimer(OnRunThink, 0.05, GameTimerFlags.Repeatable);
+    }
+
+    public void Shutdown()
+    {
+        _entityManager.RemoveEntityListener(this);
+        _modSharp.RemoveGameListener(this);
+
+        if (_timer.HasValue)
+        {
+            _modSharp.StopTimer(_timer.Value);
+            _timer = null;
+        }
+    }
+
+    int IGameListener.ListenerPriority => 0;
+    int IGameListener.ListenerVersion  => IGameListener.ApiVersion;
+
+    public void OnRoundRestart()
+    {
+        _lastEntity.Clear();
+    }
+
+    int IEntityListener.ListenerPriority => 0;
+    int IEntityListener.ListenerVersion  => IEntityListener.ApiVersion;
+
+    public EHookAction OnEntityAcceptInput(IBaseEntity entity,
+        string                                         input,
+        in EntityVariant                               value,
+        IBaseEntity?                                   activator,
+        IBaseEntity?                                   caller)
+    {
+        if (!entity.Classname.Equals(Class, StringComparison.OrdinalIgnoreCase))
+        {
+            return EHookAction.Ignored;
+        }
+
+        if (input.Equals("Activate", StringComparison.OrdinalIgnoreCase))
+        {
+            return InputActivate(entity, activator, caller);
+        }
+
+        if (input.Equals("Deactivate", StringComparison.OrdinalIgnoreCase))
+        {
+            return InputDeactivate(entity, activator, caller);
+        }
+
+        return EHookAction.Ignored;
+    }
+
+    private EHookAction InputActivate(IBaseEntity entity,
+        IBaseEntity?                              activator,
+        IBaseEntity?                              caller)
+    {
+        if (activator is null
+            || !entity.IsGameUI()
+            || activator.AsPlayerPawn() is not { } pawn
+            || pawn.GetMovementService() is not { } movement)
+        {
+            return EHookAction.SkipCallReturnOverride;
+        }
+
+        if ((entity.SpawnFlags & SpawnFlagsFreezePlayer) != 0)
+        {
+            pawn.Flags |= EntityFlags.AtControls;
+        }
+
+        var buttons = movement.KeyButtons;
+        buttons &= ~UserCommandButtons.Use;
+
+        _lastEntity[entity] = new GameUIEntity(pawn, buttons);
+
+        DelayInput(entity, pawn, "InValue", "PlayerOn");
+
+        // _logger.LogInformation("Pawn {index} activate game_ui {i2}.{name}", pawn.Index, entity.Index, entity.Name);
+
+        return EHookAction.SkipCallReturnOverride;
+    }
+
+    private EHookAction InputDeactivate(IBaseEntity entity,
+        IBaseEntity?                                activator,
+        IBaseEntity?                                caller)
+    {
+        if (!entity.IsGameUI() || !_lastEntity.Remove(entity, out var info))
+        {
+            return EHookAction.SkipCallReturnOverride;
+        }
+
+        var owner = info.Owner;
+
+        if (owner.IsValid() && owner.AsPlayerPawn() is { } pawn)
+        {
+            if ((entity.SpawnFlags & SpawnFlagsFreezePlayer) != 0)
+            {
+                pawn.Flags &= ~EntityFlags.AtControls;
+            }
+
+            DelayInput(entity, pawn, "InValue", "PlayerOff");
+        }
+
+        /*
+        _logger.LogInformation("activator {index} deactivate game_ui {i2}.{name}",
+                               owner.Index,
+                               entity.Index,
+                               entity.Name);
+        */
+
+        return EHookAction.SkipCallReturnOverride;
+    }
+
+    private TimerAction OnRunThink()
+    {
+        if (_lastEntity.Count == 0)
+        {
+            return TimerAction.Continue;
+        }
+
+        var removeList = new List<IBaseEntity>();
+
+        foreach (var (entity, info) in _lastEntity)
+        {
+            if (!entity.IsValid())
+            {
+                removeList.Add(entity);
+
+                continue;
+            }
+
+            if (!info.Owner.IsValid() || info.Owner.AsPlayerPawn() is not { } pawn)
+            {
+                DelayInput(entity, "Deactivate");
+
+                continue;
+            }
+
+            if (!pawn.IsAlive)
+            {
+                DelayInput(entity, pawn, "Deactivate");
+
+                continue;
+            }
+
+            HandleGameUI(entity, pawn, info.Buttons);
+        }
+
+        foreach (var entity in removeList)
+        {
+            _lastEntity.Remove(entity);
+        }
+
+        return TimerAction.Continue;
+    }
+
+    private void HandleGameUI(IBaseEntity entity, IPlayerPawn pawn, UserCommandButtons lastButtons)
+    {
+        if (pawn.GetMovementService() is not { } movement)
+        {
+            return;
+        }
+
+        var buttons = movement.KeyButtons;
+
+        // || ((entity.SpawnFlags & SpawnFlagsUseDeactivate)  != 0 && (buttons & UserCommandButtons.Use)  != 0)
+        if ((entity.SpawnFlags & SpawnFlagsJumpDeactivate) != 0 && (buttons & UserCommandButtons.Jump) != 0)
+        {
+            DelayInput(entity, pawn, "Deactivate");
+
+            return;
+        }
+
+        var nButtonsChanged = buttons ^ lastButtons;
+
+        // W
+        if ((nButtonsChanged & UserCommandButtons.Forward) != 0)
+        {
+            entity.AcceptInput("InValue",
+                               pawn,
+                               entity,
+                               (lastButtons & UserCommandButtons.Forward) != 0 ? "UnpressedForward" : "PressedForward");
+        }
+
+        // A
+        if ((nButtonsChanged & UserCommandButtons.MoveLeft) != 0)
+        {
+            entity.AcceptInput("InValue",
+                               pawn,
+                               entity,
+                               (lastButtons & UserCommandButtons.MoveLeft) != 0 ? "UnpressedMoveLeft" : "PressedMoveLeft");
+        }
+
+        // S
+        if ((nButtonsChanged & UserCommandButtons.Back) != 0)
+        {
+            entity.AcceptInput("InValue",
+                               pawn,
+                               entity,
+                               (lastButtons & UserCommandButtons.Back) != 0 ? "UnpressedBack" : "PressedBack");
+        }
+
+        // D
+        if ((nButtonsChanged & UserCommandButtons.MoveRight) != 0)
+        {
+            entity.AcceptInput("InValue",
+                               pawn,
+                               entity,
+                               (lastButtons & UserCommandButtons.MoveRight) != 0 ? "UnpressedMoveRight" : "PressedMoveRight");
+        }
+
+        // Attack
+        if ((nButtonsChanged & UserCommandButtons.Attack) != 0)
+        {
+            entity.AcceptInput("InValue",
+                               pawn,
+                               entity,
+                               (lastButtons & UserCommandButtons.Attack) != 0 ? "UnpressedAttack" : "PressedAttack");
+        }
+
+        // Attack2
+        if ((nButtonsChanged & UserCommandButtons.Attack2) != 0)
+        {
+            entity.AcceptInput("InValue",
+                               pawn,
+                               entity,
+                               (lastButtons & UserCommandButtons.Attack2) != 0 ? "UnpressedAttack2" : "PressedAttack2");
+        }
+
+        // Speed
+        if ((nButtonsChanged & UserCommandButtons.Speed) != 0)
+        {
+            entity.AcceptInput("InValue",
+                               pawn,
+                               entity,
+                               (lastButtons & UserCommandButtons.Speed) != 0 ? "UnpressedSpeed" : "PressedSpeed");
+        }
+
+        // Duck
+        if ((nButtonsChanged & UserCommandButtons.Duck) != 0)
+        {
+            entity.AcceptInput("InValue",
+                               pawn,
+                               entity,
+                               (lastButtons & UserCommandButtons.Duck) != 0 ? "UnpressedDuck" : "PressedDuck");
+        }
+
+        // Inspect
+        if ((nButtonsChanged & UserCommandButtons.LookAtWeapon) != 0)
+        {
+            entity.AcceptInput("InValue",
+                               pawn,
+                               entity,
+                               (lastButtons & UserCommandButtons.LookAtWeapon) != 0 ? "UnpressedInspect" : "PressedInspect");
+        }
+
+        // Score
+        if ((nButtonsChanged & UserCommandButtons.Scoreboard) != 0)
+        {
+            entity.AcceptInput("InValue",
+                               pawn,
+                               entity,
+                               (lastButtons & UserCommandButtons.Scoreboard) != 0 ? "UnpressedScore" : "PressedScore");
+        }
+
+        _lastEntity[entity] = new GameUIEntity(pawn, buttons);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void DelayInput(IBaseEntity entity, string input, string? param = null)
+        => _modSharp.InvokeFrameAction(() =>
+        {
+            if (entity.IsValid())
+            {
+                entity.AcceptInput(input, null, entity, param);
+            }
+        });
+
+    // TODO Refactor
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void DelayInput(IBaseEntity entity, IBaseEntity activator, string input, string? param = null)
+        => _modSharp.InvokeFrameAction(() =>
+        {
+            if (entity.IsValid())
+            {
+                entity.AcceptInput(input, activator.IsValid() ? activator : null, entity, param);
+            }
+        });
+}
+
+file static class GameUIExtensions
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static bool IsGameUI(this IBaseEntity entity)
+        => "game_ui".Equals(entity.PrivateVScripts, StringComparison.OrdinalIgnoreCase);
+}

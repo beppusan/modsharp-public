@@ -112,6 +112,14 @@ jobs:
           dotnet publish Sharp.Extensions/GameEventManager/src/Sharp.Extensions.GameEventManager.csproj -f net9.0 -r win-x64 --no-self-contained -c Debug --output ./extensions/Sharp.Extensions.GameEventManager -p:VersionSuffix=${{env.GITCOMMIT}}
           dotnet publish Sharp.Extensions/EntityHookManager/src/Sharp.Extensions.EntityHookManager.csproj -f net9.0 -r win-x64 --no-self-contained -c Debug --output ./extensions/Sharp.Extensions.EntityHookManager -p:VersionSuffix=${{env.GITCOMMIT}}
 
+      # Build Sharp.Modules
+      - name: Build Sharp.Modules
+        shell: bash
+        env:
+          GITCOMMIT: ${{env.GITCOMMIT}}
+        run: |
+          dotnet publish Sharp.Modules/EntityEnhancements/src/Sharp.Modules.EntityEnhancements.csproj -f net9.0 -r win-x64 --no-self-contained -c Debug --output ./build/sharp/modules/EntityEnhancements -p:VersionSuffix=${{env.GITCOMMIT}}
+
       # Copy Assets
       - name: Copy Assets
         shell: bash
@@ -239,6 +247,14 @@ jobs:
           dotnet publish Sharp.Extensions/CommandManager/src/Sharp.Extensions.CommandManager.csproj -f net9.0 -r linux-x64 --no-self-contained -c Debug --output ./extensions/Sharp.Extensions.CommandManager -p:VersionSuffix=${{env.GITCOMMIT}}
           dotnet publish Sharp.Extensions/GameEventManager/src/Sharp.Extensions.GameEventManager.csproj -f net9.0 -r linux-x64 --no-self-contained -c Debug --output ./extensions/Sharp.Extensions.GameEventManager -p:VersionSuffix=${{env.GITCOMMIT}}
           dotnet publish Sharp.Extensions/EntityHookManager/src/Sharp.Extensions.EntityHookManager.csproj -f net9.0 -r linux-x64 --no-self-contained -c Debug --output ./extensions/Sharp.Extensions.EntityHookManager -p:VersionSuffix=${{env.GITCOMMIT}}
+
+      # Build Sharp.Modules
+      - name: Build Sharp.Modules
+        shell: bash
+        env:
+          GITCOMMIT: ${{env.GITCOMMIT}}
+        run: |
+          dotnet publish Sharp.Modules/EntityEnhancements/src/Sharp.Modules.EntityEnhancements.csproj -f net9.0 -r linux-x64 --no-self-contained -c Debug --output ./build/sharp/modules/EntityEnhancements -p:VersionSuffix=${{env.GITCOMMIT}}
 
       # Copy Assets
       - name: Copy Assets
