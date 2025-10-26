@@ -25,8 +25,10 @@ using Google.Protobuf;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Sharp.Core.Bridges.Natives;
+using Sharp.Core.Helpers;
 using Sharp.Core.Objects;
 using Sharp.Shared.Enums;
+using Sharp.Shared.Helpers;
 using Sharp.Shared.Listeners;
 using Sharp.Shared.Managers;
 using Sharp.Shared.Objects;
@@ -49,6 +51,7 @@ internal class ClientManager : ICoreClientManager
 
     private readonly ILogger<ClientManager> _logger;
     private readonly IConfiguration         _configuration;
+    private readonly ConfigurationWatcher   _configurationWatcher;
 
     private readonly List<IClientListener>                                     _listeners;
     private readonly Queue<GameClient>                                         _adminRunCheckQueue;
@@ -62,10 +65,12 @@ internal class ClientManager : ICoreClientManager
 
     private static int _sQueryCookie;
 
-    public ClientManager(ILogger<ClientManager> logger, IConfiguration configuration)
+    public ClientManager(ILogger<ClientManager> logger, IConfiguration configuration, IShutdownMonitor shutdown)
     {
-        _logger             = logger;
-        _configuration      = configuration;
+        _logger               = logger;
+        _configuration        = configuration;
+        _configurationWatcher = new ConfigurationWatcher(configuration, LoadCommandPrefix, shutdown.Token);
+
         _listeners          = [];
         _adminRunCheckQueue = [];
         _commandHooks       = new Dictionary<string, IClientManager.DelegateClientCommand?>(StringComparer.OrdinalIgnoreCase);
@@ -672,12 +677,7 @@ internal class ClientManager : ICoreClientManager
         _publicTriggers.Clear();
         _silentTriggers.Clear();
 
-        if (_configuration.GetSection("ChatCommand.TriggerPrefixes") is not { } section)
-        {
-            _logger.LogWarning("'ChatCommand.TriggerPrefixes' is missing in configuration, chat command trigger will not work");
-
-            return;
-        }
+        var section = _configuration.GetSection("ChatCommand.TriggerPrefixes");
 
         if (section.GetSection("Public").Get<List<string>>() is { } publicList)
         {
@@ -698,7 +698,7 @@ internal class ClientManager : ICoreClientManager
         else
         {
             _logger.LogWarning(
-                "'ChatCommand.TriggerPrefixes/Public' is invalid in configuration, chat command public trigger will not work");
+                "'ChatCommand.TriggerPrefixes/Public' is invalid or empty, chat command public trigger will not work");
         }
 
         if (section.GetSection("Silent").Get<List<string>>() is { } silentList)
@@ -720,7 +720,7 @@ internal class ClientManager : ICoreClientManager
         else
         {
             _logger.LogWarning(
-                "'ChatCommand.TriggerPrefixes/Silent' is invalid in configuration, chat command silent trigger will not work");
+                "'ChatCommand.TriggerPrefixes/Silent' is invalid or empty, chat command silent trigger will not work");
         }
     }
 }

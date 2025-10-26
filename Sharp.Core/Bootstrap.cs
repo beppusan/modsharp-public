@@ -410,12 +410,12 @@ public static class Bootstrap
         }
 
         var loggerConfiguration = new LoggerConfiguration()
-                                  .Enrich.FromLogContext()
                                   .Destructure.ByTransforming<SteamID>(x => x.AsPrimitive())
                                   .Destructure.ByTransforming<EntityIndex>(x => x.AsPrimitive())
                                   .Destructure.ByTransforming<PlayerSlot>(x => x.AsPrimitive())
                                   .Destructure.ByTransforming<UserID>(x => x.AsPrimitive())
                                   .Destructure.ByTransforming<NetworkReceiver>(x => x.DestructureTransform())
+                                  .Enrich.FromLogContext()
                                   .WriteTo.Logger(lc => lc
                                                         .Filter.ByIncludingOnly(e => e.Level >= LogEventLevel.Information)
                                                         .WriteTo.Console(theme: AnsiConsoleTheme.Code,
