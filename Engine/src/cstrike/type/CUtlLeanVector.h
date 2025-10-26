@@ -3,6 +3,8 @@
 #ifndef CSTRIKE_TYPE_CUTLLEANVECTOR_H
 #define CSTRIKE_TYPE_CUTLLEANVECTOR_H
 
+#include "logging.h"
+
 #include "cstrike/type/CMemAllocAllocator.h"
 
 #include <algorithm>
@@ -61,7 +63,7 @@ public:
     // Element removal
     void RemoveAll(); // doesn't deallocate memory
 
-    [[nodiscard]] bool IsIdxValid(I i) const { return (i >= 0) && (i < NumAllocated()); }
+    [[nodiscard]] bool IsIdxValid(I i) const { return (i >= 0) && (i < m_nCount); }
 
     // Memory deallocation
     void Purge();
@@ -229,7 +231,7 @@ public:
     [[nodiscard]] bool       IsValidIterator(const Iterator_t it) const { return IsIdxValid(it.index); }
     [[nodiscard]] Iterator_t InvalidIterator() const { return Iterator_t(InvalidIndex()); }
 
-    [[nodiscard]] bool IsIdxValid(int32_t i) const { return i > 0 && i < Count(); }
+    [[nodiscard]] bool IsIdxValid(int32_t i) const { return i >= 0 && i < Count(); }
 
     [[nodiscard]] static int32_t InvalidIndex() { return -1; }
 
@@ -281,49 +283,69 @@ CUtlLeanVectorImpl<B, T, I>& CUtlLeanVectorImpl<B, T, I>::operator=(const CUtlLe
 template <class B, class T, class I>
 T& CUtlLeanVectorImpl<B, T, I>::operator[](int32_t i)
 {
+    AssertBool(IsIdxValid(i));
+
     return this->Base()[i];
 }
 
 template <class B, class T, class I>
 const T& CUtlLeanVectorImpl<B, T, I>::operator[](int32_t i) const
 {
+    AssertBool(IsIdxValid(i));
+
     return this->Base()[i];
 }
 
 template <class B, class T, class I>
 T& CUtlLeanVectorImpl<B, T, I>::Element(int32_t i)
 {
+    AssertBool(IsIdxValid(i));
+
     return this->Base()[i];
 }
 
 template <class B, class T, class I>
 const T& CUtlLeanVectorImpl<B, T, I>::Element(int32_t i) const
 {
+    AssertBool(IsIdxValid(i));
+
     return this->Base()[i];
 }
 
 template <class B, class T, class I>
 T& CUtlLeanVectorImpl<B, T, I>::Head()
 {
+    AssertBool(IsIdxValid(0));
+
     return this->Base()[0];
 }
 
 template <class B, class T, class I>
 const T& CUtlLeanVectorImpl<B, T, I>::Head() const
 {
+    AssertBool(IsIdxValid(0));
+
     return this->Base()[0];
 }
 
 template <class B, class T, class I>
 T& CUtlLeanVectorImpl<B, T, I>::Tail()
 {
-    return this->Base()[this->m_nCount - 1];
+    const auto index = this->m_nCount - 1;
+
+    AssertBool(IsIdxValid(index));
+
+    return this->Base()[index];
 }
 
 template <class B, class T, class I>
 const T& CUtlLeanVectorImpl<B, T, I>::Tail() const
 {
-    return this->Base()[this->m_nCount - 1];
+    const auto index = this->m_nCount - 1;
+
+    AssertBool(IsIdxValid(index));
+
+    return this->Base()[index];
 }
 
 template <class B, class T, class I>

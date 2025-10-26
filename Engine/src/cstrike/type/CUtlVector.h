@@ -3,6 +3,8 @@
 #ifndef CSTRIKE_TYPE_CUTLVECTOR_H
 #define CSTRIKE_TYPE_CUTLVECTOR_H
 
+#include "logging.h"
+
 #include "cstrike/type/CUtlMemory.h"
 
 #include <cstring>
@@ -154,49 +156,69 @@ protected:
 template <class T, class A>
 T& CUtlVector<T, A>::operator[](int32_t i)
 {
+    AssertBool(IsValidIndex(i));
+
     return m_Memory[i];
 }
 
 template <class T, class A>
 const T& CUtlVector<T, A>::operator[](int32_t i) const
 {
+    AssertBool(IsValidIndex(i));
+
     return m_Memory[i];
 }
 
 template <class T, class A>
 T& CUtlVector<T, A>::Element(int32_t i)
 {
+    AssertBool(IsValidIndex(i));
+
     return m_Memory[i];
 }
 
 template <class T, class A>
 const T& CUtlVector<T, A>::Element(int32_t i) const
 {
+    AssertBool(IsValidIndex(i));
+
     return m_Memory[i];
 }
 
 template <class T, class A>
 T& CUtlVector<T, A>::Head()
 {
+    AssertBool(IsValidIndex(0));
+
     return m_Memory[0];
 }
 
 template <class T, class A>
 const T& CUtlVector<T, A>::Head() const
 {
+    AssertBool(IsValidIndex(0));
+
     return m_Memory[0];
 }
 
 template <class T, class A>
 T& CUtlVector<T, A>::Tail()
 {
-    return m_Memory[m_Size - 1];
+    const auto index = Count() - 1;
+
+    AssertBool(IsValidIndex(index));
+
+    return m_Memory[index];
 }
 
 template <class T, class A>
 const T& CUtlVector<T, A>::Tail() const
 {
-    return m_Memory[m_Size - 1];
+    const auto index = Count() - 1;
+
+    AssertBool(IsValidIndex(index));
+
+    return m_Memory[index];
 }
 
 template <typename T, class A>
@@ -223,16 +245,23 @@ CUtlVector<T, A>& CUtlVector<T, A>::operator=(const CUtlVector<T, A>& other)
     if (this == &other)
         return *this;
 
-    auto current_size             = m_Size;
-    auto current_allocation_count = m_Memory.NumAllocated();
+    const auto new_size = other.Count();
 
-    int32_t new_size = other.Count();
+    if (new_size <= 0)
+    {
+        Purge();
+        m_Size = 0;
+        return *this;
+    }
 
-    auto dest = m_Memory.Base();
-    auto src  = other.m_Memory.Base();
+    const auto current_size             = m_Size;
+    const auto current_allocation_count = m_Memory.NumAllocated();
 
     if (new_size <= current_allocation_count)
     {
+        auto dest = m_Memory.Base();
+        auto src  = other.m_Memory.Base();
+
         // if T is trivial to copy then just use memcpy to prevent overhead
         if constexpr (std::is_trivially_copyable_v<T>)
         {
@@ -262,17 +291,16 @@ CUtlVector<T, A>& CUtlVector<T, A>::operator=(const CUtlVector<T, A>& other)
     else
     {
         EnsureCapacity(new_size);
+        auto dest = m_Memory.Base();
+        auto src  = other.m_Memory.Base();
 
-        if (new_size > 0)
+        if constexpr (std::is_trivially_copyable_v<T>)
         {
-            if constexpr (std::is_trivially_copyable_v<T>)
-            {
-                memcpy(dest, src, sizeof(T) * new_size);
-            }
-            else
-            {
-                std::uninitialized_copy(src, src + new_size, dest);
-            }
+            memcpy(dest, src, sizeof(T) * new_size);
+        }
+        else
+        {
+            std::uninitialized_copy(src, src + new_size, dest);
         }
 
         m_Size = new_size;

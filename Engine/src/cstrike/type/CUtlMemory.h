@@ -4,6 +4,7 @@
 #define CSTRIKE_TYPE_CUTLMEMORY_H
 
 #include "global.h"
+#include "logging.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -120,21 +121,29 @@ public:
     // element access
     T& operator[](I i)
     {
+        AssertBool(IsIdxValid(i));
+
         return m_pMemory[i];
     }
 
     const T& operator[](I i) const
     {
+        AssertBool(IsIdxValid(i));
+
         return m_pMemory[i];
     }
 
     T& Element(I i)
     {
+        AssertBool(IsIdxValid(i));
+
         return m_pMemory[i];
     }
 
     const T& Element(I i) const
     {
+        AssertBool(IsIdxValid(i));
+
         return m_pMemory[i];
     }
 

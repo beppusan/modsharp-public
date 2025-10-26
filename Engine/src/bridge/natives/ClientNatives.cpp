@@ -175,7 +175,7 @@ ECommandAction PostCommand(CServerSideClient* pClient, const char* pCommand, con
 
 static CServerSideClient* GetClientBySlot(PlayerSlot_t slot)
 {
-    return sv->GetClient(slot);
+    return sv->GetClientSafety(slot);
 }
 static CServerSideClient* GetClientByUserId(UserId_t userId)
 {
