@@ -305,7 +305,7 @@ public static class Bootstrap
             var configFile = Path.Combine(root, "..", "configs", "core.json");
 
             var configuration = new ConfigurationBuilder()
-                                .AddJsonFile(configFile, false, false)
+                                .AddJsonFile(configFile, false, true)
                                 .Build();
 
             var services = new ServiceCollection();
