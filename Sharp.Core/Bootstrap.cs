@@ -310,7 +310,7 @@ public static class Bootstrap
 
             var services = new ServiceCollection();
 
-            ConfigureLogging(services);
+            ConfigureLogging(services, configuration);
             ConfigureServices(services, configuration);
 
             var serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions
@@ -373,79 +373,127 @@ public static class Bootstrap
         return 0;
     }
 
-    private static void ConfigureLogging(IServiceCollection services)
+    private static void ConfigureLogging(IServiceCollection services, IConfiguration configuration)
     {
         var root = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
                    ?? throw new InvalidOperationException("Root path is null!");
 
+        // 看不懂文档的人太多, 而且也不喜欢乱搞
+        // 这里做配置简化然后重新导出配置
+        // 所以不考虑使用Serilog.Settings.Configuration
+
         var logsDir = Path.Combine(root, "../logs");
         Directory.CreateDirectory(logsDir);
 
-        const string fileTemplate
+        const string defaultFileTemplate
             = "[{Timestamp:yyyy/MM/dd HH:mm:ss.fff}] | {Level} | {SourceContext}{Scope} {MapName} {NewLine}{Message:lj}{NewLine}{Exception}{NewLine}";
 
-        const string consoleTemplate
+        const string defaultConsoleTemplate
             = "L<CoreCLR> [{Timestamp:MM/dd HH:mm:ss}] | {Level} | {SourceContext}{Scope} {MapName} {NewLine}{Message:lj}{NewLine}{Exception}{NewLine}";
 
-        Log.Logger = new LoggerConfiguration()
-                     .Enrich.FromLogContext()
-                     .MinimumLevel.Verbose()
-                     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-                     .MinimumLevel.Override("System.Net.Http", LogEventLevel.Fatal)
-                     .WriteTo.Logger(lc => lc.Filter
-                                             .ByIncludingOnly(e => e.Level is LogEventLevel.Verbose)
-                                             .WriteTo.Async(a =>
-                                                                a.File(Path.Combine(logsDir, "Trace..log"),
-                                                                       rollingInterval: RollingInterval.Day,
-                                                                       outputTemplate: fileTemplate,
-                                                                       shared: true)))
-                     .WriteTo.Logger(lc => lc.Filter
-                                             .ByIncludingOnly(e => e.Level is LogEventLevel.Debug)
-                                             .WriteTo.Async(a =>
-                                                                a.File(Path.Combine(logsDir, "Debug..log"),
-                                                                       rollingInterval: RollingInterval.Day,
-                                                                       outputTemplate: fileTemplate,
-                                                                       shared: true)))
-                     .WriteTo.Logger(lc => lc.Filter
-                                             .ByIncludingOnly(e => e.Level is LogEventLevel.Information)
-                                             .WriteTo.File(Path.Combine(logsDir, "Info..log"),
-                                                           rollingInterval: RollingInterval.Day,
-                                                           outputTemplate: fileTemplate,
-                                                           shared: true))
-                     .WriteTo.Logger(lc => lc
-                                           .Filter
-                                           .ByIncludingOnly(e => e.Level is LogEventLevel.Warning)
-                                           .WriteTo.File(Path.Combine(logsDir, "Warn..log"),
-                                                         rollingInterval: RollingInterval.Day,
-                                                         outputTemplate: fileTemplate,
-                                                         shared: true))
-                     .WriteTo.Logger(lc => lc
-                                           .Filter
-                                           .ByIncludingOnly(e => e.Level >= LogEventLevel.Error)
-                                           .WriteTo.File(Path.Combine(logsDir, "Error..log"),
-                                                         rollingInterval: RollingInterval.Day,
-                                                         outputTemplate: fileTemplate,
-                                                         shared: false))
-                     .WriteTo.Logger(lc => lc
-                                           .Filter.ByIncludingOnly(e => e.Level >= LogEventLevel.Information)
-                                           .WriteTo.Console(theme: AnsiConsoleTheme.Code,
-                                                            outputTemplate: consoleTemplate,
-                                                            applyThemeToRedirectedOutput: false))
-                     .Destructure.ByTransforming<SteamID>(x => x.AsPrimitive())
-                     .Destructure.ByTransforming<EntityIndex>(x => x.AsPrimitive())
-                     .Destructure.ByTransforming<PlayerSlot>(x => x.AsPrimitive())
-                     .Destructure.ByTransforming<UserID>(x => x.AsPrimitive())
-                     .Destructure.ByTransforming<NetworkReceiver>(x => x.DestructureTransform())
-                     .CreateLogger();
+        var fileTemplate    = defaultFileTemplate;
+        var consoleTemplate = defaultConsoleTemplate;
+
+        var loggerSettings = configuration.GetSection("Logger");
+
+        if (loggerSettings.GetSection("Template") is { } template)
+        {
+            if (template.GetSection("File").Get<string>() is { } ft)
+            {
+                fileTemplate = ft;
+            }
+
+            if (template.GetSection("Console").Get<string>() is { } ct)
+            {
+                consoleTemplate = $"L<CoreCLR> {ct}";
+            }
+        }
+
+        var loggerConfiguration = new LoggerConfiguration()
+                                  .Enrich.FromLogContext()
+                                  .Destructure.ByTransforming<SteamID>(x => x.AsPrimitive())
+                                  .Destructure.ByTransforming<EntityIndex>(x => x.AsPrimitive())
+                                  .Destructure.ByTransforming<PlayerSlot>(x => x.AsPrimitive())
+                                  .Destructure.ByTransforming<UserID>(x => x.AsPrimitive())
+                                  .Destructure.ByTransforming<NetworkReceiver>(x => x.DestructureTransform())
+                                  .WriteTo.Logger(lc => lc
+                                                        .Filter.ByIncludingOnly(e => e.Level >= LogEventLevel.Information)
+                                                        .WriteTo.Console(theme: AnsiConsoleTheme.Code,
+                                                                         outputTemplate: consoleTemplate,
+                                                                         applyThemeToRedirectedOutput: false))
+                                  .WriteTo.Logger(lc => lc.Filter
+                                                          .ByIncludingOnly(e => e.Level is LogEventLevel.Verbose)
+                                                          .WriteTo.Async(a =>
+                                                                             a.File(Path.Combine(logsDir, "Trace..log"),
+                                                                                    rollingInterval: RollingInterval.Day,
+                                                                                    outputTemplate: fileTemplate,
+                                                                                    shared: true)))
+                                  .WriteTo.Logger(lc => lc.Filter
+                                                          .ByIncludingOnly(e => e.Level is LogEventLevel.Debug)
+                                                          .WriteTo.Async(a =>
+                                                                             a.File(Path.Combine(logsDir, "Debug..log"),
+                                                                                    rollingInterval: RollingInterval.Day,
+                                                                                    outputTemplate: fileTemplate,
+                                                                                    shared: true)))
+                                  .WriteTo.Logger(lc => lc.Filter
+                                                          .ByIncludingOnly(e => e.Level is LogEventLevel.Information)
+                                                          .WriteTo.File(Path.Combine(logsDir, "Info..log"),
+                                                                        rollingInterval: RollingInterval.Day,
+                                                                        outputTemplate: fileTemplate,
+                                                                        shared: false))
+                                  .WriteTo.Logger(lc => lc
+                                                        .Filter
+                                                        .ByIncludingOnly(e => e.Level is LogEventLevel.Warning)
+                                                        .WriteTo.File(Path.Combine(logsDir, "Warn..log"),
+                                                                      rollingInterval: RollingInterval.Day,
+                                                                      outputTemplate: fileTemplate,
+                                                                      shared: false))
+                                  .WriteTo.Logger(lc => lc
+                                                        .Filter
+                                                        .ByIncludingOnly(e => e.Level >= LogEventLevel.Error)
+                                                        .WriteTo.File(Path.Combine(logsDir, "Error..log"),
+                                                                      rollingInterval: RollingInterval.Day,
+                                                                      outputTemplate: fileTemplate,
+                                                                      shared: false));
+
+        if (loggerSettings.GetSection("LogLevel") is { } levels)
+        {
+            var defaultLevel = LogEventLevel.Verbose;
+
+            if (levels.GetSection("Default").Get<string>() is { } defaultLevelSetting
+                && Enum.TryParse(defaultLevelSetting, false, out LogEventLevel defLevel))
+            {
+                defaultLevel = defLevel;
+            }
+
+            // setting default level
+            loggerConfiguration = loggerConfiguration.MinimumLevel.Is(defaultLevel);
+
+            foreach (var level in levels.GetChildren())
+            {
+                if (level.Key.Equals("Default", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (level.Get<string>() is { } levelSetting
+                    && Enum.TryParse(levelSetting, false, out LogEventLevel logLevel))
+                {
+                    loggerConfiguration = loggerConfiguration.MinimumLevel.Override(level.Key, logLevel);
+                }
+            }
+        }
+
+        var logger = loggerConfiguration.CreateLogger();
 
         services.AddLogging(logging =>
         {
             logging.ClearProviders();
 
-            logging.AddSerilog();
-
-            logging.SetMinimumLevel(LogLevel.Information);
+            logging.AddSerilog(logger, true);
         });
+
+        Log.Logger = logger;
     }
 
     private static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
