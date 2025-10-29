@@ -130,10 +130,8 @@ jobs:
       # Upload ModSharp artifact
       - name: Upload ModSharp artifact
         uses: actions/upload-artifact@v4
-        env:
-          PR_NUMBER: ${{ github.event.number }}
         with:
-          name: ModSharp-pr#{{env.PR_NUMBER}}-windows
+          name: ModSharp-pr#${{ github.event.number }}-windows
           path: ./build
           if-no-files-found: error
           retention-days: 3
@@ -141,10 +139,8 @@ jobs:
       # Upload Extensions artifact
       - name: Upload Extensions artifact
         uses: actions/upload-artifact@v4
-        env:
-          PR_NUMBER: ${{ github.event.number }}
         with:
-          name: ModSharp-pr#{{env.PR_NUMBER}}-windows-extensions
+          name: ModSharp-pr#${{ github.event.number }}-windows-extensions
           path: ./extensions
           if-no-files-found: error
           retention-days: 3
@@ -268,10 +264,8 @@ jobs:
       # Upload ModSharp artifact
       - name: Upload ModSharp artifact
         uses: actions/upload-artifact@v4
-        env:
-          PR_NUMBER: ${{ github.event.number }}
         with:
-          name: ModSharp-pr#{{env.PR_NUMBER}}-linux
+          name: ModSharp-pr#${{ github.event.number }}-linux
           path: ./build
           if-no-files-found: error
           retention-days: 3
@@ -279,10 +273,8 @@ jobs:
       # Upload Extensions artifact
       - name: Upload Extensions artifact
         uses: actions/upload-artifact@v4
-        env:
-          PR_NUMBER: ${{ github.event.number }}
         with:
-          name: ModSharp-pr#{{env.PR_NUMBER}}-linux-extensions
+          name: ModSharp-pr#${{ github.event.number }}-linux-extensions
           path: ./extensions
           if-no-files-found: error
           retention-days: 3
