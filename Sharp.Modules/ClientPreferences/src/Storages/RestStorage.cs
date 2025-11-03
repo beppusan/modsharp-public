@@ -99,7 +99,7 @@ internal class RestStorage : IStorage
         return map;
     }
 
-    private interface IRestApi
+    internal interface IRestApi
     {
         [Get("/cookie/{identity}")]
         Task<CookieModel[]> Load(ulong identity);

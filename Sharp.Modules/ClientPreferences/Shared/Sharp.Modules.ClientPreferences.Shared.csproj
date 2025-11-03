@@ -5,7 +5,7 @@
         <ImplicitUsings>disable</ImplicitUsings>
         <LangVersion>13</LangVersion>
         <Nullable>enable</Nullable>
-        <AssemblyName>Sharp.Extensions.ClientPreferences.Shared</AssemblyName>
+        <AssemblyName>Sharp.Modules.ClientPreferences.Shared</AssemblyName>
         <RootNamespace>Sharp.Modules.ClientPreferences.Shared</RootNamespace>
         <VersionPrefix>2.0</VersionPrefix>
         <VersionSuffix>1</VersionSuffix>
