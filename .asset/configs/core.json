@@ -20,5 +20,7 @@
       "`"
     ]
   },
-  "ConnectionStrings": {}
+  "ConnectionStrings": {
+    "ClientPreferences": "litedb://Filename={sharp::data}/client-preferences.db;Mode=Exclusive;Flush=true"
+  }
 }
