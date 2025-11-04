@@ -16,7 +16,7 @@ public sealed class ClientPrefs : IModSharpModule
     private readonly IHookManager        _hooks;
     private readonly ISharpModuleManager _modules;
 
-    private readonly IDisposable _callback;
+    private IDisposable? _callback;
 
     public ClientPrefs(ISharedSystem sharedSystem,
         string                       dllPath,
@@ -99,9 +99,9 @@ public sealed class ClientPrefs : IModSharpModule
             _cachedInterface = _modules.GetOptionalSharpModuleInterface<IClientPreference>(IClientPreference.Identity);
 
             // set the listener of cookie load event
-            if (_cachedInterface?.Instance is null)
+            if (_cachedInterface?.Instance is { } instance)
             {
-                _callback = _cachedInterface?.Instance.ListenOnLoad(OnCookieLoad);
+                _callback = instance.ListenOnLoad(OnCookieLoad);
             }
         }
 
