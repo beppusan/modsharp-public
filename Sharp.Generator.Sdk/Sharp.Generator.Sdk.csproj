@@ -5,6 +5,8 @@
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <AssemblyName>Sharp.Generator.Sdk</AssemblyName>
         <RootNamespace>Sharp.Generator.Sdk</RootNamespace>
+        <Title>ModSharp.$(AssemblyName)</Title>
+        <PackageId>ModSharp.$(AssemblyName)</PackageId>
         <Description>Native Hook Code Generator for ModSharp.</Description>
         <IsRoslynComponent>true</IsRoslynComponent>
         <IncludeBuildOutput>false</IncludeBuildOutput>

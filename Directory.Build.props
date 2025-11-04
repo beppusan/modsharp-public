@@ -18,7 +18,7 @@
         <!-- NuGet -->
         <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/Kxnrl/ModSharp-public</PackageProjectUrl>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageReadmeFile>README.nuget.md</PackageReadmeFile>
         <PackageTags>ModSharp;CS2</PackageTags>
         
         <!-- Repository -->
@@ -31,7 +31,7 @@
 
     <ItemGroup>
         <None Include="$(MSBuildThisFileDirectory)icon.png" Pack="true" PackagePath="\" />
-        <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" />
+        <None Include="$(MSBuildThisFileDirectory)README.nuget.md" Pack="true" PackagePath="\" />
         <EmbeddedResource Include="$(MSBuildThisFileDirectory)LICENSE" />
     </ItemGroup>
 
