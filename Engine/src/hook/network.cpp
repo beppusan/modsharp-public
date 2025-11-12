@@ -111,14 +111,32 @@ void RemoveHookedNetMsgId(uint16_t netMsgId)
 int32_t DispatchParticleEffectFilter(const char* pszParticleName, Vector* pOrigin, Vector* pAngles, IRecipientFilter* pFilter)
 {
     s_bBypassDispatchEffect = true;
-    const auto ret          = address::server::UTIL_DispatchParticleEffectFilterPosition(pszParticleName, pOrigin, pAngles, nullptr, false, -1, pFilter, false);
+
+#ifdef PLATFORM_WINDOWS
+    const auto ret = address::server::UTIL_DispatchParticleEffectFilterPosition(pszParticleName, pOrigin, pAngles, nullptr, false, -1, pFilter, false);
+#else
+    auto origin_xy = *reinterpret_cast<double*>(pOrigin);
+    auto angles_xy = *reinterpret_cast<double*>(pAngles);
+
+    const auto ret = address::server::UTIL_DispatchParticleEffectFilterPosition(pszParticleName, nullptr, false, -1, pFilter, false, origin_xy, pOrigin->z, angles_xy, pAngles->z);
+#endif
+
     s_bBypassDispatchEffect = false;
     return ret;
 }
 int32_t DispatchParticleEffectFilter(const char* pszParticleName, CBaseEntity* pEntity, Vector* pOrigin, Vector* pAngles, bool bResetAllParticlesOnEntity, IRecipientFilter* pFilter)
 {
     s_bBypassDispatchEffect = true;
-    const auto ret          = address::server::UTIL_DispatchParticleEffectFilterPosition(pszParticleName, pOrigin, pAngles, pEntity, false, -1, pFilter, bResetAllParticlesOnEntity);
+
+#ifdef PLATFORM_WINDOWS
+    const auto ret = address::server::UTIL_DispatchParticleEffectFilterPosition(pszParticleName, pOrigin, pAngles, pEntity, false, -1, pFilter, bResetAllParticlesOnEntity);
+#else
+    auto origin_xy = *reinterpret_cast<double*>(pOrigin);
+    auto angles_xy = *reinterpret_cast<double*>(pAngles);
+
+    const auto ret = address::server::UTIL_DispatchParticleEffectFilterPosition(pszParticleName, pEntity, false, -1, pFilter, bResetAllParticlesOnEntity, origin_xy, pOrigin->z, angles_xy, pAngles->z);
+#endif
+
     s_bBypassDispatchEffect = false;
     return ret;
 }
