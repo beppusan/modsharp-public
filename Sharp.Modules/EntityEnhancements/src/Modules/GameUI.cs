@@ -34,7 +34,7 @@ internal sealed class GameUI : IEnhancement, IGameListener, IEntityListener
 {
     private const string Class = "logic_case";
 
-    private readonly record struct GameUIEntity(IBaseEntity Owner, UserCommandButtons Buttons);
+    private readonly record struct GameUIEntity(IPlayerPawn Owner, UserCommandButtons Buttons);
 
     private const uint SpawnFlagsFreezePlayer   = 32;
     private const uint SpawnFlagsHideWeapon     = 64;
@@ -46,8 +46,6 @@ internal sealed class GameUI : IEnhancement, IGameListener, IEntityListener
     private readonly IEntityManager  _entityManager;
 
     private readonly Dictionary<IBaseEntity, GameUIEntity> _lastEntity;
-
-    private Guid? _timer;
 
     public GameUI(ISharedSystem sharedSystem)
     {
@@ -63,19 +61,16 @@ internal sealed class GameUI : IEnhancement, IGameListener, IEntityListener
         _entityManager.InstallEntityListener(this);
         _modSharp.InstallGameListener(this);
 
-        _timer = _modSharp.PushTimer(OnRunThink, 0.05, GameTimerFlags.Repeatable);
+        _modSharp.PushTimer(OnRunThink, 0.05, GameTimerFlags.Repeatable);
+
+        _entityManager.HookEntityInput(Class, "Activate");
+        _entityManager.HookEntityInput(Class, "Deactivate");
     }
 
     public void Shutdown()
     {
         _entityManager.RemoveEntityListener(this);
         _modSharp.RemoveGameListener(this);
-
-        if (_timer.HasValue)
-        {
-            _modSharp.StopTimer(_timer.Value);
-            _timer = null;
-        }
     }
 
     int IGameListener.ListenerPriority => 0;
@@ -102,20 +97,18 @@ internal sealed class GameUI : IEnhancement, IGameListener, IEntityListener
 
         if (input.Equals("Activate", StringComparison.OrdinalIgnoreCase))
         {
-            return InputActivate(entity, activator, caller);
+            return InputActivate(entity, activator);
         }
 
         if (input.Equals("Deactivate", StringComparison.OrdinalIgnoreCase))
         {
-            return InputDeactivate(entity, activator, caller);
+            return InputDeactivate(entity, activator);
         }
 
         return EHookAction.Ignored;
     }
 
-    private EHookAction InputActivate(IBaseEntity entity,
-        IBaseEntity?                              activator,
-        IBaseEntity?                              caller)
+    private EHookAction InputActivate(IBaseEntity entity, IBaseEntity? activator)
     {
         if (activator is null
             || !entity.IsGameUI()
@@ -142,30 +135,26 @@ internal sealed class GameUI : IEnhancement, IGameListener, IEntityListener
         return EHookAction.SkipCallReturnOverride;
     }
 
-    private EHookAction InputDeactivate(IBaseEntity entity,
-        IBaseEntity?                                activator,
-        IBaseEntity?                                caller)
+    private EHookAction InputDeactivate(IBaseEntity entity, IBaseEntity? activator)
     {
         if (!entity.IsGameUI() || !_lastEntity.Remove(entity, out var info))
         {
             return EHookAction.SkipCallReturnOverride;
         }
 
-        var owner = info.Owner;
-
-        if (owner.IsValid() && owner.AsPlayerPawn() is { } pawn)
+        if (info.Owner.IsValid())
         {
             if ((entity.SpawnFlags & SpawnFlagsFreezePlayer) != 0)
             {
-                pawn.Flags &= ~EntityFlags.AtControls;
+                info.Owner.Flags &= ~EntityFlags.AtControls;
             }
 
-            DelayInput(entity, pawn, "InValue", "PlayerOff");
+            DelayInput(entity, info.Owner, "InValue", "PlayerOff");
         }
 
         /*
         _logger.LogInformation("activator {index} deactivate game_ui {i2}.{name}",
-                               owner.Index,
+                               info.Owner.Index,
                                entity.Index,
                                entity.Name);
         */
@@ -173,11 +162,11 @@ internal sealed class GameUI : IEnhancement, IGameListener, IEntityListener
         return EHookAction.SkipCallReturnOverride;
     }
 
-    private TimerAction OnRunThink()
+    private void OnRunThink()
     {
         if (_lastEntity.Count == 0)
         {
-            return TimerAction.Continue;
+            return;
         }
 
         var removeList = new List<IBaseEntity>();
@@ -191,29 +180,27 @@ internal sealed class GameUI : IEnhancement, IGameListener, IEntityListener
                 continue;
             }
 
-            if (!info.Owner.IsValid() || info.Owner.AsPlayerPawn() is not { } pawn)
+            if (!info.Owner.IsValid())
             {
                 DelayInput(entity, "Deactivate");
 
                 continue;
             }
 
-            if (!pawn.IsAlive)
+            if (!info.Owner.IsAlive)
             {
-                DelayInput(entity, pawn, "Deactivate");
+                DelayInput(entity, info.Owner, "Deactivate");
 
                 continue;
             }
 
-            HandleGameUI(entity, pawn, info.Buttons);
+            HandleGameUI(entity, info.Owner, info.Buttons);
         }
 
         foreach (var entity in removeList)
         {
             _lastEntity.Remove(entity);
         }
-
-        return TimerAction.Continue;
     }
 
     private void HandleGameUI(IBaseEntity entity, IPlayerPawn pawn, UserCommandButtons lastButtons)
@@ -225,8 +212,8 @@ internal sealed class GameUI : IEnhancement, IGameListener, IEntityListener
 
         var buttons = movement.KeyButtons;
 
-        // || ((entity.SpawnFlags & SpawnFlagsUseDeactivate)  != 0 && (buttons & UserCommandButtons.Use)  != 0)
-        if ((entity.SpawnFlags & SpawnFlagsJumpDeactivate) != 0 && (buttons & UserCommandButtons.Jump) != 0)
+        if ((entity.SpawnFlags & SpawnFlagsJumpDeactivate) != 0
+            && (buttons.HasFlag(UserCommandButtons.Jump) || movement.ScrollButtons.HasFlag(UserCommandButtons.Jump)))
         {
             DelayInput(entity, pawn, "Deactivate");
 
@@ -236,93 +223,93 @@ internal sealed class GameUI : IEnhancement, IGameListener, IEntityListener
         var nButtonsChanged = buttons ^ lastButtons;
 
         // W
-        if ((nButtonsChanged & UserCommandButtons.Forward) != 0)
+        if (nButtonsChanged.HasFlag(UserCommandButtons.Forward))
         {
             entity.AcceptInput("InValue",
                                pawn,
                                entity,
-                               (lastButtons & UserCommandButtons.Forward) != 0 ? "UnpressedForward" : "PressedForward");
+                               lastButtons.HasFlag(UserCommandButtons.Forward) ? "UnpressedForward" : "PressedForward");
         }
 
         // A
-        if ((nButtonsChanged & UserCommandButtons.MoveLeft) != 0)
+        if (nButtonsChanged.HasFlag(UserCommandButtons.MoveLeft))
         {
             entity.AcceptInput("InValue",
                                pawn,
                                entity,
-                               (lastButtons & UserCommandButtons.MoveLeft) != 0 ? "UnpressedMoveLeft" : "PressedMoveLeft");
+                               lastButtons.HasFlag(UserCommandButtons.MoveLeft) ? "UnpressedMoveLeft" : "PressedMoveLeft");
         }
 
         // S
-        if ((nButtonsChanged & UserCommandButtons.Back) != 0)
+        if (nButtonsChanged.HasFlag(UserCommandButtons.Back))
         {
             entity.AcceptInput("InValue",
                                pawn,
                                entity,
-                               (lastButtons & UserCommandButtons.Back) != 0 ? "UnpressedBack" : "PressedBack");
+                               lastButtons.HasFlag(UserCommandButtons.Back) ? "UnpressedBack" : "PressedBack");
         }
 
         // D
-        if ((nButtonsChanged & UserCommandButtons.MoveRight) != 0)
+        if (nButtonsChanged.HasFlag(UserCommandButtons.MoveRight))
         {
             entity.AcceptInput("InValue",
                                pawn,
                                entity,
-                               (lastButtons & UserCommandButtons.MoveRight) != 0 ? "UnpressedMoveRight" : "PressedMoveRight");
+                               lastButtons.HasFlag(UserCommandButtons.MoveRight) ? "UnpressedMoveRight" : "PressedMoveRight");
         }
 
         // Attack
-        if ((nButtonsChanged & UserCommandButtons.Attack) != 0)
+        if (nButtonsChanged.HasFlag(UserCommandButtons.Attack))
         {
             entity.AcceptInput("InValue",
                                pawn,
                                entity,
-                               (lastButtons & UserCommandButtons.Attack) != 0 ? "UnpressedAttack" : "PressedAttack");
+                               lastButtons.HasFlag(UserCommandButtons.Attack) ? "UnpressedAttack" : "PressedAttack");
         }
 
         // Attack2
-        if ((nButtonsChanged & UserCommandButtons.Attack2) != 0)
+        if (nButtonsChanged.HasFlag(UserCommandButtons.Attack2))
         {
             entity.AcceptInput("InValue",
                                pawn,
                                entity,
-                               (lastButtons & UserCommandButtons.Attack2) != 0 ? "UnpressedAttack2" : "PressedAttack2");
+                               lastButtons.HasFlag(UserCommandButtons.Attack2) ? "UnpressedAttack2" : "PressedAttack2");
         }
 
         // Speed
-        if ((nButtonsChanged & UserCommandButtons.Speed) != 0)
+        if (nButtonsChanged.HasFlag(UserCommandButtons.Speed))
         {
             entity.AcceptInput("InValue",
                                pawn,
                                entity,
-                               (lastButtons & UserCommandButtons.Speed) != 0 ? "UnpressedSpeed" : "PressedSpeed");
+                               lastButtons.HasFlag(UserCommandButtons.Speed) ? "UnpressedSpeed" : "PressedSpeed");
         }
 
         // Duck
-        if ((nButtonsChanged & UserCommandButtons.Duck) != 0)
+        if (nButtonsChanged.HasFlag(UserCommandButtons.Duck))
         {
             entity.AcceptInput("InValue",
                                pawn,
                                entity,
-                               (lastButtons & UserCommandButtons.Duck) != 0 ? "UnpressedDuck" : "PressedDuck");
+                               lastButtons.HasFlag(UserCommandButtons.Duck) ? "UnpressedDuck" : "PressedDuck");
         }
 
         // Inspect
-        if ((nButtonsChanged & UserCommandButtons.LookAtWeapon) != 0)
+        if (nButtonsChanged.HasFlag(UserCommandButtons.LookAtWeapon))
         {
             entity.AcceptInput("InValue",
                                pawn,
                                entity,
-                               (lastButtons & UserCommandButtons.LookAtWeapon) != 0 ? "UnpressedInspect" : "PressedInspect");
+                               lastButtons.HasFlag(UserCommandButtons.LookAtWeapon) ? "UnpressedInspect" : "PressedInspect");
         }
 
         // Score
-        if ((nButtonsChanged & UserCommandButtons.Scoreboard) != 0)
+        if (nButtonsChanged.HasFlag(UserCommandButtons.Scoreboard))
         {
             entity.AcceptInput("InValue",
                                pawn,
                                entity,
-                               (lastButtons & UserCommandButtons.Scoreboard) != 0 ? "UnpressedScore" : "PressedScore");
+                               lastButtons.HasFlag(UserCommandButtons.Scoreboard) ? "UnpressedScore" : "PressedScore");
         }
 
         _lastEntity[entity] = new GameUIEntity(pawn, buttons);
@@ -338,7 +325,6 @@ internal sealed class GameUI : IEnhancement, IGameListener, IEntityListener
             }
         });
 
-    // TODO Refactor
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DelayInput(IBaseEntity entity, IBaseEntity activator, string input, string? param = null)
         => _modSharp.InvokeFrameAction(() =>
