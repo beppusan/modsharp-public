@@ -393,10 +393,10 @@ jobs:
         env:
           GITCOMMIT: ${{ needs.prefetch.outputs.git_commit }}
         run: |
-          zip -r ModSharp-git${{env.GITCOMMIT}}-windows.zip build/windows/*
-          zip -r ModSharp-git${{env.GITCOMMIT}}-windows-extensions.zip build/windows-extensions/*
-          zip -r ModSharp-git${{env.GITCOMMIT}}-linux.zip build/linux/*
-          zip -r ModSharp-git${{env.GITCOMMIT}}-linux-extensions.zip build/linux-extensions/*
+          pushd build/windows && zip -r ../../ModSharp-git${{env.GITCOMMIT}}-windows.zip * && popd
+          pushd build/windows-extensions && zip -r ../../ModSharp-git${{env.GITCOMMIT}}-windows-extensions.zip * && popd
+          pushd build/linux && zip -r ../../ModSharp-git${{env.GITCOMMIT}}-linux.zip * && popd
+          pushd build/linux-extensions && zip -r ../../ModSharp-git${{env.GITCOMMIT}}-linux-extensions.zip * && popd
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
