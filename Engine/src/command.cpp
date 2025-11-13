@@ -57,7 +57,7 @@ static void OnModSharpCommand(const CCommandContext& context, const CCommand& co
                                    "To see credits, type \"ms credits\"\n"
                                    "To see version, type \"ms version\"\n"
                                    "To see modules, type \"ms modules\"\n"
-                                   "Visit https://ms.sourcesharp.net/\n\n";
+                                   "Visit https://modsharp.net/\n\n";
 
         CommandPrintConsole(pClient, credits);
         return;
@@ -74,9 +74,9 @@ static void OnModSharpCommand(const CCommandContext& context, const CCommand& co
                      "    ModSharp Version: %s\n"
                      "    DotNet Version: %s\n"
                      "    Compiled on: %s %s\n"
-                     "    Build from: https://github.com/Kxnrl/modsharp/commit/%s\n"
+                     "    Build from: https://github.com/Kxnrl/modsharp-public/commit/%s\n"
                      "    Build ID: %d:%s\n"
-                     "    https://ms.sourcesharp.net/\n\n",
+                     "    https://modsharp.net/\n\n",
                      VERSION_STRING_BUILD,
                      coreclr::GetDotNetVersion(),
                      __DATE__,
@@ -100,7 +100,7 @@ static void OnModSharpCommand(const CCommandContext& context, const CCommand& co
         "      ModSharp " FULL_VERSION_STRING " \n"
         "      " BUILD_DATE "\n"
         "   " COPYRIGHT_STRING "\n"
-        "Visit https://ms.sourcesharp.net/\n\n";
+        "Visit https://modsharp.net/\n\n";
 
     CommandPrintConsole(pClient, message);
 }

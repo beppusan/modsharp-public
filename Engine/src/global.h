@@ -35,7 +35,7 @@ inline constexpr char MODSHARP_MESSAGE[] = "\n \n"
                                            "      " BUILD_DATE "\n"
                                            "   " COPYRIGHT_STRING "\n"
                                            "\n"
-                                           "Visit https://ms.sourcesharp.net/\n ";
+                                           "Visit https://modsharp.net/\n ";
 
 class CModule;
 class IMemAlloc;
