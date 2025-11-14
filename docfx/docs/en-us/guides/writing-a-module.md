@@ -13,7 +13,7 @@ Below we will introduce step by step how to write a module.
 
 ## Environment Setup
 
-The current version of **ModSharp** uses .NET version `9.x`,  
+The current version of **ModSharp** uses .NET version `10.x`,  
 Please ensure your .NET SDK version is at least this version or higher, otherwise you cannot proceed with the following steps.
 
 We recommend using the following development environments:
@@ -32,7 +32,7 @@ After creating the project, you should be able to find **Example.csproj**, which
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -45,7 +45,7 @@ Add the following content to this file:
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
 +    <AssemblyName>Example</AssemblyName>

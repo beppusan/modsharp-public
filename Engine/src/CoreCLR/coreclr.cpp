@@ -1,4 +1,4 @@
-/* 
+/*
  * ModSharp
  * Copyright (C) 2023-2025 Kxnrl. All Rights Reserved.
  *
@@ -160,6 +160,8 @@ private:
 };
 
 static std::vector<std::string> s_vecSearchPaths = {};
+static Version                  s_highestVersionFound;
+static constexpr int            MIN_DOTNET_MAJOR_VERSION = 10;
 
 static std::string FindDotnetRuntime()
 {
@@ -178,19 +180,27 @@ static std::string FindDotnetRuntime()
 
     for (const auto& search_path : s_vecSearchPaths)
     {
-        if (!std::filesystem::exists(search_path))
-            continue;
+        if (!std::filesystem::exists(search_path)) continue;
 
         for (const auto& entry : std::filesystem::recursive_directory_iterator(search_path))
         {
             if (entry.path().filename() != dll)
                 continue;
 
-            if (Version version(entry.path().parent_path().filename().string()); version > latest_file_version)
+            Version version(entry.path().parent_path().filename().string());
+            if (version > s_highestVersionFound)
             {
-                latest_file_version = version;
-                latest_file         = entry;
-                found               = true;
+                s_highestVersionFound = version;
+            }
+
+            if (version > latest_file_version)
+            {
+                if (version.get(0) >= MIN_DOTNET_MAJOR_VERSION)
+                {
+                    latest_file_version = version;
+                    latest_file         = entry;
+                    found               = true;
+                }
             }
         }
     }
@@ -211,10 +221,26 @@ bool LoadHostFxr()
     {
         auto str = StringJoin(s_vecSearchPaths, "\n");
 
-        FatalError("Failed to find dotnet runtime library in the following path: \n%s\n"
-                   "Make sure you have dotnet installed. If you are running steamrt3 without a docker, please copy your dotnet runtime to game/sharp/runtime.",
-                   str.c_str());
+        if (s_highestVersionFound.get(0) == 0)
+        {
+            FatalError("Failed to find dotnet runtime library in the following path: \n%s\n"
+                       "Make sure you have dotnet installed. If you are running steamrt3 without a docker, please copy your dotnet runtime to game/sharp/runtime.",
+                       str.c_str());
+        }
+        else
+        {
+            char found_version_str[32];
+            snprintf(found_version_str, sizeof(found_version_str), "%d.%d.%d",
+                     s_highestVersionFound.get(0), s_highestVersionFound.get(1), s_highestVersionFound.get(2));
 
+            FatalError("A .NET runtime was found, but the version is too old.\n"
+                       "Required major version: %d or newer.\n"
+                       "Highest version found: %s\n"
+                       "Please install .NET %d or a newer runtime.",
+                       MIN_DOTNET_MAJOR_VERSION,
+                       found_version_str,
+                       MIN_DOTNET_MAJOR_VERSION);
+        }
         return false;
     }
 
@@ -331,6 +357,7 @@ bool coreclr::Init(const char* baseDir)
     const auto str = abs.string();
 
     std::cout << "AppContext.BaseDirectory = " << str << std::endl;
+    std::cout << ".NET runtime version = " << GetDotNetVersion() << std::endl;
 
     load_assembly_and_get_function_pointer = get_dotnet_load_assembly(STR("../../sharp/core/Sharp.Core.runtimeconfig.json"),
 #ifdef PLATFORM_WINDOWS

@@ -19,11 +19,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Sharp.Shared.Types;
 
 // ReSharper disable once InconsistentNaming
 [InlineArray(3)]
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
 public struct Matrix3x4
 {
     [InlineArray(4)]
