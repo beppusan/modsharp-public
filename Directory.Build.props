@@ -20,6 +20,7 @@
         <PackageProjectUrl>https://github.com/Kxnrl/ModSharp-public</PackageProjectUrl>
         <PackageReadmeFile>README.nuget.md</PackageReadmeFile>
         <PackageTags>ModSharp;CS2</PackageTags>
+        <PackageIcon>icon.png</PackageIcon>
         
         <!-- Repository -->
         <RepositoryType>git</RepositoryType>
