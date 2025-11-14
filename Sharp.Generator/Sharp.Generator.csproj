@@ -7,13 +7,6 @@
         <Nullable>enable</Nullable>
         <AssemblyName>Sharp.Generator</AssemblyName>
         <RootNamespace>Sharp.Generator</RootNamespace>
-        <VersionPrefix>2.0</VersionPrefix>
-        <VersionSuffix>1</VersionSuffix>
-        <Version>$(VersionPrefix).$(VersionSuffix)</Version>
-        <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
-        <PackageProjectUrl>https://github.com/Kxnrl/ModSharp-public</PackageProjectUrl>
-        <PublishRepositoryUrl>true</PublishRepositoryUrl>
-        <SourceControlInformationFeatureSupported>true</SourceControlInformationFeatureSupported>
         <Copyright>©2025 Kxnrl</Copyright>
         <Authors>Kxnrl, BoneTM, laper32, Nukoooo</Authors>
         <RepositoryUrl>https://github.com/Kxnrl/ModSharp-public</RepositoryUrl>

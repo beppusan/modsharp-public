@@ -11,7 +11,7 @@
         <Authors>Kxnrl, BoneTM, laper32, Nukoooo</Authors>
 
         <!-- Version -->
-        <VersionPrefix>2.0</VersionPrefix>
+        <VersionPrefix>2.1</VersionPrefix>
         <VersionSuffix>1</VersionSuffix>
         <Version>$(VersionPrefix).$(VersionSuffix)</Version>
         
