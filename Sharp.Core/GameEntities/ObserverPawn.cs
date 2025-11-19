@@ -17,24 +17,28 @@
  * along with ModSharp. If not, see <https://www.gnu.org/licenses/>.
  */
 
-using Sharp.Shared.Attributes;
-using Sharp.Shared.Enums;
+using System;
+using Sharp.Core.GameObjects;
 using Sharp.Shared.GameEntities;
-using Sharp.Shared.Types;
+using Sharp.Shared.GameObjects;
 
-namespace Sharp.Shared.GameObjects;
+namespace Sharp.Core.GameEntities;
 
-/// <summary>
-///     ObserverServices is CCSObserver only
-/// </summary>
-[NetClass("CCSObserver_ObserverServices")]
-public interface IObserverService : IPlayerPawnComponent
+internal partial class ObserverPawn : BasePlayerPawn, IObserverPawn
 {
-    bool ForcedObserverMode { get; set; }
+    protected override bool IsObserver()
+        => true;
 
-    ObserverMode ObserverLastMode { get; set; }
+    public override IObserverPawn? AsObserver()
+        => this;
 
-    CEntityHandle<IBaseEntity> ObserverTarget { get; set; }
+#region Service Schema
 
-    ObserverMode ObserverMode { get; set; }
+    public unsafe IObserverService? GetObserverService()
+        => ObserverService.Create(*(nint*) IntPtr.Add(_this, GetObserverServiceField().Offset));
+
+    public override unsafe IMovementService? GetMovementService()
+        => MovementService.Create(*(nint*) IntPtr.Add(_this, GetMovementServiceField().Offset));
+
+#endregion
 }

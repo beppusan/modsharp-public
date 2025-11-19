@@ -1,4 +1,4 @@
-/* 
+/*
  * ModSharp
  * Copyright (C) 2023-2025 Kxnrl. All Rights Reserved.
  *
@@ -36,10 +36,10 @@ internal abstract partial class PlayerPawnComponent : SchemaObject, IPlayerPawnC
     {
     }
 
-    public IPlayerPawn? GetPlayer()
+    public IBasePlayerPawn? GetPlayer()
     {
         var ptr = _this.GetObjectPtr(Offset.Value);
 
-        return ptr == nint.Zero ? null : PlayerPawn.Create(ptr);
+        return ptr == nint.Zero ? null : BasePlayerPawn.Create(ptr);
     }
 }
