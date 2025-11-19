@@ -90,7 +90,7 @@ internal sealed class EntityPool<T> where T : class, IBaseEntity
 
     internal void Set(T entity)
     {
-        ArgumentNullException.ThrowIfNull(entity, nameof(entity));
+        ArgumentNullException.ThrowIfNull(entity);
 
 #if DEBUG
         Debug.Print(
