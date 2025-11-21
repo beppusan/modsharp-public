@@ -384,15 +384,13 @@ internal class ClientManager : ICoreClientManager
 
             if (client.IsAuthenticated)
             {
-                var c = client;
-
                 var block = false;
 
                 for (var i = 0; i < _listeners.Count; i++)
                 {
                     try
                     {
-                        if (_listeners[i].OnClientPreAdminCheck(c))
+                        if (_listeners[i].OnClientPreAdminCheck(client))
                         {
                             block = true;
                         }
@@ -408,29 +406,31 @@ internal class ClientManager : ICoreClientManager
 
                 if (block)
                 {
-                    _logger.LogWarning("Blocked {client}<{steamId}> as AdminCheck", c.Name, c.SteamId);
+                    _logger.LogTrace("Blocked {client}<{steamId}> as AdminCheck", client.Name, client.SteamId);
 
                     continue;
                 }
-
-                for (var i = 0; i < _listeners.Count; i++)
-                {
-                    try
-                    {
-                        _listeners[i].OnClientPostAdminCheck(c);
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogError(e,
-                                         "An error occurred while calling listener<{s}> {name}",
-                                         "OnClientPostAdminCheck",
-                                         _listeners[i].GetType().Name);
-                    }
-                }
             }
-            else
+            else if (!client.IsFakeClient)
             {
                 back.Add(client);
+
+                continue;
+            }
+
+            for (var i = 0; i < _listeners.Count; i++)
+            {
+                try
+                {
+                    _listeners[i].OnClientPostAdminCheck(client);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e,
+                                     "An error occurred while calling listener<{s}> {name}",
+                                     "OnClientPostAdminCheck",
+                                     _listeners[i].GetType().Name);
+                }
             }
         }
 
